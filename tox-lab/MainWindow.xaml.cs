@@ -26,8 +26,8 @@ namespace WpfApp1
         int inputTextIndex = 0;
         string hashStr = "";
         int hashVal = 0;
-        string portRead;
-        string portWrite;
+        string logsText = "";
+        string amountOfSentBytes = "\n";
 
         public MainWindow()
         {
@@ -35,7 +35,6 @@ namespace WpfApp1
 
             InitializeComponent();
             logTextBox.Text = "\n";
-            var openPorts = portChat.GetPortName();
         }
 
         private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -75,8 +74,8 @@ namespace WpfApp1
                 {
                     portChat.Write(val);
                 }
-                logTextBox.Text = "\n" + portWrite + "\n" + portRead + "\n";
-                logTextBox.Text += "bytes sent: " + inputTextIndex.ToString() + "\n";
+                amountOfSentBytes = "bytes sent - " + inputTextIndex.ToString() + "\n";
+                UpdateLogs();
             }
             inputTextIndex++;
             hashStr = textBox.Text;
@@ -87,25 +86,23 @@ namespace WpfApp1
         {
             RadioButton pressed = (RadioButton)sender;
             textBox1.IsReadOnly = false;
-            portWrite = portChat.InitializeWrite(pressed.Uid[0] - '0');
-            logTextBox.Text += portWrite;
+            portChat.InitializeWrite(pressed.Uid[0] - '0');
+            portChat.InitializeRead(pressed.Uid[0] - '0');
+            logsText += portChat.WritePort;
+            logsText += portChat.ReadPort;
+            UpdateLogs();
             sent1.IsEnabled = false;
             sent2.IsEnabled = false;
             sent3.IsEnabled = false;
             sent4.IsEnabled = false;
-        }
-
-        private void StartOutput(object sender, RoutedEventArgs e)
-        {
-            RadioButton pressed = (RadioButton)sender;
-            portRead = portChat.InitializeRead(pressed.Uid[0] - '0');
-            logTextBox.Text += portRead;
-            received1.IsEnabled = false;
-            received2.IsEnabled = false;
-            received3.IsEnabled = false;
-            received4.IsEnabled = false;
             Thread readThread = new Thread(ReadListen);
             readThread.Start();
+        }
+
+        private void UpdateLogs()
+        {
+            logTextBox.Text = "\n" + logsText;
+            logTextBox.Text += amountOfSentBytes;
         }
 
         private void ReadListen()
@@ -117,12 +114,10 @@ namespace WpfApp1
             }
         }
 
-
         protected override void OnClosed(EventArgs e)
         {
             base.OnClosed(e);
             portChat.Close();
-
             System.Windows.Application.Current.Shutdown();
         }
 
@@ -137,31 +132,10 @@ namespace WpfApp1
         private void TextBox_OnPreviewTextInput(object sender, TextCompositionEventArgs e)
         {
             char inp = e.Text[0];
-
             if ((inp >= 'а' && inp <= 'я') || (inp >= 'А' && inp <= 'Я'))
             {
                 e.Handled = true;
             }
-            var s = textBox1.Text;
-            if (s.Length > 2)
-            {
-                //var tempStr = hashStr;
-                //s = s.Substring(0, s.Length - 1);
-                //var t = s.GetHashCode();
-                //var tt = hashStr.Substring(0, hashStr.Length - 1).GetHashCode();
-                //if (tt != t)
-                //{
-                //    e.Handled = true;
-                //}
-            }
         }
-
-
-        private void myButton_MouseEnter(object sender, EventArgs e)
-        {
-            //textBox1.Cursor = Cursors.None;           
-        }
-
-
     }
 }

@@ -5,7 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WpfApp1"
         mc:Ignorable="d"
-        Title="Port chat" Height="450" Width="800">
+        Title="Port chat" Height="450" Width="800" 
+        MaxWidth="800"
+        MinWidth="500">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition/>
@@ -16,31 +18,23 @@
             <RowDefinition></RowDefinition>
             <RowDefinition></RowDefinition>
         </Grid.RowDefinitions>
-        <StackPanel Orientation="Vertical" Grid.Row="0" Grid.Column="0" Margin="0,44,0,11" Background="Azure">
-            <TextBlock  Text="data bits size to sent" Width="180" Height="30" VerticalAlignment="Top"/>
-            <StackPanel Orientation="Horizontal" Width="340" >
+        <StackPanel Orientation="Vertical" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,44,0,11" Background="Azure">
+            <TextBlock  Text="data bits size" Width="180" Height="30" TextAlignment="Center"/>
+            <StackPanel Orientation="Horizontal" Width="300" >
                 <RadioButton GroupName="sent" Content="5 bits" x:Uid="5" x:Name="sent1" Width="70" Height="30" Checked="StartInput"/>
                 <RadioButton GroupName="sent" Content="6 bits" x:Uid="6" x:Name="sent2" Width="70" Height="30" Checked="StartInput"/>
                 <RadioButton GroupName="sent" Content="7 bits" x:Uid="7" x:Name="sent3" Width="70" Height="30" Checked="StartInput"/>
                 <RadioButton GroupName="sent" Content="8 bits" x:Uid="8" x:Name="sent4" Width="70" Height="30" Checked="StartInput"/>
             </StackPanel>
-            <TextBlock x:Name="bytesSent" Text="     input"  HorizontalAlignment="Stretch" Height="26" Background="White"/>
-        </StackPanel>
-        <StackPanel Orientation="Vertical" Grid.Row="0" Grid.Column="1" Grid.RowSpan="2" Margin="0,44,0,11" Background="Azure">
-            <TextBlock  Text="data bits size to receive" Width="180" Height="30" VerticalAlignment="Top"/>
-            <StackPanel Orientation="Horizontal" Width="340">
-                <RadioButton GroupName="received" Content="5 bits" x:Uid="5" x:Name="received1" Checked="StartOutput" Width="70" Height="30" />
-                <RadioButton GroupName="received" Content="6 bits" x:Uid="6" x:Name="received2" Checked="StartOutput" Width="70" Height="30"/>
-                <RadioButton GroupName="received" Content="7 bits" x:Uid="7" x:Name="received3" Checked="StartOutput" Width="70" Height="30"/>
-                <RadioButton GroupName="received" Content="8 bits" x:Uid="8" x:Name="received4" Checked="StartOutput" Width="70" Height="30"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
+            <TextBlock x:Name="sentBytes" Text="     input" HorizontalAlignment="left"  Width="400" Height="26"  Background="White" />
+            <TextBlock x:Name="reciBytes" Text="    output" HorizontalAlignment="Right" Width="400" Height="28"  Background="White" />
             </StackPanel>
-            <TextBlock  Text="     output"  HorizontalAlignment="Stretch" Height="45" Background="White"/>
-        </StackPanel>
 
+        </StackPanel>
         <TextBox x:Name="textBox1" Background="Azure" TextChanged="TextBox_TextChanged"
                  IsReadOnly="True"
                  ForceCursor="True"
-                 MouseEnter="myButton_MouseEnter"
                  PreviewKeyDown="textBox_PreviewKeyDown"
                  PreviewTextInput="TextBox_OnPreviewTextInput"
                  Grid.Column="0"

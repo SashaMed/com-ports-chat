@@ -13,28 +13,38 @@ namespace WpfApp1
 {
     internal class PortChat
     {
+        public string WritePort
+        {
+            get { return $"sender port - {writePort.PortName}\n"; }
+        }
+
+        public string ReadPort
+        {
+            get { return $"receiver port - {readPort.PortName}\n"; }
+        }
 
         SerialPort writePort;
         SerialPort readPort;
         string currentPortToConnect = "com";
         int currentWritePortNum = 0;
+        int currentReadPortNum = 1;
         int swapFlag = 0;
 
-        public string InitializeRead(int bytesSize)
+        public void InitializeRead(int bytesSize)
         {
             bool continueTrying = true;
             readPort = new SerialPort();
-            readPort.BaudRate = readPort.BaudRate;
-            readPort.Parity = readPort.Parity;
             readPort.DataBits = bytesSize;
-            readPort.StopBits = readPort.StopBits;
-            readPort.Handshake = readPort.Handshake;
-            readPort.ReadTimeout = 500;
-            readPort.WriteTimeout = 500;
+            InitializePort(ref readPort);
+
+            if (currentWritePortNum != 0)
+            {
+                currentReadPortNum = currentWritePortNum;
+            }
 
             while (continueTrying)
             {
-                readPort.PortName = SetPortName(currentWritePortNum + 1);
+                readPort.PortName = SetPortName(currentReadPortNum + 1);
                 try
                 {
                     readPort.Open();
@@ -46,32 +56,16 @@ namespace WpfApp1
                     continueTrying = true;
                 }
             }
-
-            if (swapFlag % 2 == 1 && swapFlag != 0)
-            {
-                var temp = new SerialPort();
-                temp = writePort;
-                writePort = readPort;
-                readPort = temp;
-            }
-
-            return "opened port " + currentPortToConnect + "\n";
+            CheckPortSwap(ref readPort, ref writePort, swapFlag);
         }
 
 
-        public string InitializeWrite(int bytesSize)
+        public void InitializeWrite(int bytesSize)
         {
             bool continueTrying = true;
             writePort = new SerialPort();
-
-            writePort.BaudRate = writePort.BaudRate;
-            writePort.Parity = writePort.Parity;
             writePort.DataBits = bytesSize;
-            writePort.StopBits = writePort.StopBits;
-            writePort.Handshake = writePort.Handshake;
-            writePort.ReadTimeout = 500;
-            writePort.WriteTimeout = 500;
-
+            InitializePort(ref writePort);
             while (continueTrying)
             {
                 writePort.PortName = SetPortName(currentWritePortNum);
@@ -86,8 +80,32 @@ namespace WpfApp1
                     continueTrying = true;
                 }
             }
-            //if (swapFlag%2 == 1 && swapFlag != 0)
-            return "opened port " + currentPortToConnect + "\n";
+            CheckPortSwap(ref readPort, ref writePort, swapFlag);
+        }
+
+
+        public static void InitializePort(ref SerialPort port)
+        {
+            port.BaudRate = port.BaudRate;
+            port.Parity = port.Parity;
+            port.StopBits = port.StopBits;
+            port.Handshake = port.Handshake;
+            port.ReadTimeout = 500;
+            port.WriteTimeout = 500;
+        }
+
+        public static void CheckPortSwap(ref SerialPort readPort, ref SerialPort writePort, int swapFlag)
+        {
+            if (swapFlag % 2 == 0 && swapFlag != 0)
+            {
+                if (readPort != null && writePort != null)
+                {
+                    var temp = new SerialPort();
+                    temp = writePort;
+                    writePort = readPort;
+                    readPort = temp;
+                }
+            }
         }
 
         public void Close()
@@ -117,7 +135,6 @@ namespace WpfApp1
                 if (!currentPortToConnect.Equals(ports[i].ToString()))
                 {
                     currentPortToConnect = ports[i].ToString();
-                    currentWritePortNum = i + 1;
                     break;
                 }
             }
@@ -131,7 +148,6 @@ namespace WpfApp1
             array[0] = val;
             writePort.Write(array, 0, 1);
         }
-
 
         public string[] GetPortName()
         {
