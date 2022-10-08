@@ -30,6 +30,7 @@ namespace WpfApp1
         int currentReadPortNum = 1;
         int swapFlag = 0;
 
+
         public void InitializeRead(int bytesSize)
         {
             bool continueTrying = true;
@@ -41,20 +42,26 @@ namespace WpfApp1
             {
                 currentReadPortNum = currentWritePortNum;
             }
-
+            var portsCount = GetPortName().Length;
+            int i = 0;
             while (continueTrying)
             {
+                if (i > portsCount)
+                {
+                    throw new Exception("no available ports - try to connect later\n");
+                }
                 readPort.PortName = SetPortName(currentReadPortNum + 1);
                 try
                 {
                     readPort.Open();
                     continueTrying = false;
                 }
-                catch (Exception e)
+                catch (UnauthorizedAccessException)
                 {
                     swapFlag++;
                     continueTrying = true;
                 }
+                i++;
             }
             CheckPortSwap(ref readPort, ref writePort, swapFlag);
         }
@@ -66,19 +73,26 @@ namespace WpfApp1
             writePort = new SerialPort();
             writePort.DataBits = bytesSize;
             InitializePort(ref writePort);
+            var portsCount = GetPortName().Length;
+            int i = 0;
             while (continueTrying)
             {
+                if (i > portsCount)
+                {
+                    throw new Exception("no available ports - try to connect later\n");
+                }
                 writePort.PortName = SetPortName(currentWritePortNum);
                 try
                 {
                     writePort.Open();
                     continueTrying = false;
                 }
-                catch (Exception e)
+                catch (UnauthorizedAccessException)
                 {
                     swapFlag++;
                     continueTrying = true;
                 }
+                i++;
             }
             CheckPortSwap(ref readPort, ref writePort, swapFlag);
         }
@@ -86,7 +100,7 @@ namespace WpfApp1
 
         public static void InitializePort(ref SerialPort port)
         {
-            port.BaudRate = port.BaudRate;
+            port.BaudRate = int.MaxValue;
             port.Parity = port.Parity;
             port.StopBits = port.StopBits;
             port.Handshake = port.Handshake;

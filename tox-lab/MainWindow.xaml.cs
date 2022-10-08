@@ -85,12 +85,23 @@ namespace WpfApp1
         private void StartInput(object sender, RoutedEventArgs e)
         {
             RadioButton pressed = (RadioButton)sender;
-            textBox1.IsReadOnly = false;
-            portChat.InitializeWrite(pressed.Uid[0] - '0');
-            portChat.InitializeRead(pressed.Uid[0] - '0');
+            try
+            {
+                portChat.InitializeWrite(pressed.Uid[0] - '0');
+                portChat.InitializeRead(pressed.Uid[0] - '0');
+            }
+            catch(Exception ex)
+            {
+                pressed.IsChecked = false;
+                //logsText += ex.Message;
+                //UpdateLogs();
+                MessageBox.Show(ex.Message);
+                return;
+            }
             logsText += portChat.WritePort;
             logsText += portChat.ReadPort;
             UpdateLogs();
+            textBox1.IsReadOnly = false;
             sent1.IsEnabled = false;
             sent2.IsEnabled = false;
             sent3.IsEnabled = false;
@@ -123,7 +134,8 @@ namespace WpfApp1
 
         private void textBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Up || e.Key == Key.Delete || e.Key == Key.Left || e.Key == Key.Back)
+            if (e.Key == Key.Up || e.Key == Key.Delete || e.Key == Key.Left || e.Key == Key.Back
+                || e.Key == Key.LeftCtrl)
             {
                 e.Handled = true;
             }
