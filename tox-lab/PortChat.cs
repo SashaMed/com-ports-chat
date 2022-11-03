@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Globalization;
+using tox_lab;
 
 namespace WpfApp1
 {
@@ -23,13 +24,24 @@ namespace WpfApp1
             get { return $"receiver port - {readPort.PortName}\n"; }
         }
 
+        public string StringMask { get => byteConverter.StringMask; }
+
+        public string CurrentFrame { get; private set; }
         SerialPort writePort;
         SerialPort readPort;
         string currentPortToConnect = "com";
         int currentWritePortNum = 0;
         int currentReadPortNum = 1;
         int swapFlag = 0;
+        int readWriteSize = 20;
+        int dataSize = 15;
+        string writeStr = "";
+        ByteStaffingConverter byteConverter;
 
+        public PortChat()
+        {
+            byteConverter = new ByteStaffingConverter((char)('a' + 15), readWriteSize);
+        }
 
         public void InitializeRead(int bytesSize)
         {
@@ -100,7 +112,7 @@ namespace WpfApp1
 
         public static void InitializePort(ref SerialPort port)
         {
-            port.BaudRate = int.MaxValue;
+            port.BaudRate = 9600;
             port.Parity = port.Parity;
             port.StopBits = port.StopBits;
             port.Handshake = port.Handshake;
@@ -128,19 +140,6 @@ namespace WpfApp1
             readPort.Close();
         }
 
-        public string Read()
-        {
-            string message = "";
-            byte[] bytes = new byte[1];
-            try
-            {
-                readPort.Read(bytes, 0, 1);
-                message += Convert.ToChar(bytes[0], CultureInfo.CurrentCulture);
-                return message;
-            }
-            catch (TimeoutException) { return String.Empty; }
-        }
-
         public string SetPortName(int index = 0)
         {
             var ports = SerialPort.GetPortNames();
@@ -155,12 +154,33 @@ namespace WpfApp1
             return currentPortToConnect;
         }
 
-
-        public void Write(byte val)
+        public string Read()
         {
-            byte[] array = new byte[1];
-            array[0] = val;
-            writePort.Write(array, 0, 1);
+            string message = "";
+            byte[] bytes = new byte[readWriteSize + 1];
+            try
+            {
+                if (readPort.Read(bytes, 0, readWriteSize) > -1)
+                {
+                    message += byteConverter.DecodeToString(bytes);
+                }
+                return message;
+            }
+            catch (TimeoutException) { return String.Empty; }
+        }
+
+        public string Write(char val)
+        {
+            writeStr += val;
+            if (writeStr.Length == dataSize)
+            {
+                var array = byteConverter.EncodeToByteArray(writeStr, currentWritePortNum);
+                var currentFrame = byteConverter.EncodeToString(writeStr, currentReadPortNum);
+                writePort.Write(array, 0, readWriteSize);
+                writeStr = "";
+                return currentFrame;
+            }
+            return String.Empty;
         }
 
         public string[] GetPortName()

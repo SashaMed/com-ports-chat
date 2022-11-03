@@ -51,12 +51,12 @@
                     Panel.ZIndex="2" Background="White"
                     HorizontalAlignment="Stretch"
                     Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"/>
-        <TextBox IsReadOnly="True" x:Name="logTextBox"   Background="Azure" x:FieldModifier="public"
+        <RichTextBox IsReadOnly="True" x:Name="logTextBox"   Background="Azure" x:FieldModifier="public"
                 Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
                 HorizontalAlignment="Stretch"
                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
                 ScrollViewer.VerticalScrollBarVisibility="Auto"
-                ScrollViewer.CanContentScroll="True"></TextBox>
+                ScrollViewer.CanContentScroll="True"></RichTextBox>
 
     </Grid>
 </Window>

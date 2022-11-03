@@ -1,22 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using static System.Windows.Input.Cursor;
+using Color = System.Windows.Media.Color;
 
 namespace WpfApp1
 {
@@ -26,15 +15,13 @@ namespace WpfApp1
         int inputTextIndex = 0;
         string hashStr = "";
         int hashVal = 0;
-        string logsText = "";
-        string amountOfSentBytes = "\n";
+        string currentFrameString = "";
 
         public MainWindow()
         {
             portChat = new PortChat();
 
             InitializeComponent();
-            logTextBox.Text = "\n";
         }
 
         private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -42,7 +29,7 @@ namespace WpfApp1
             TextBox textBox = (TextBox)sender;
             e.Source.ToString();
             bool b = true;
-            byte val = (byte)textBox.Text[inputTextIndex];
+            var val = textBox.Text[inputTextIndex];
             var s = textBox1.Text;
             if (s.Length > 2)
             {
@@ -68,18 +55,21 @@ namespace WpfApp1
                 {
                     portChat.Write(val);
                     inputTextIndex++;
-                    portChat.Write((byte)'\n');
+                    portChat.Write('\n');
                 }
                 else
                 {
-                    portChat.Write(val);
+                    currentFrameString = portChat.Write(val);
+                    if (!string.IsNullOrEmpty(currentFrameString))
+                    {
+                        UpdateLogs();
+                    }
                 }
-                amountOfSentBytes = "bytes sent - " + inputTextIndex.ToString() + "\n";
-                UpdateLogs();
             }
             inputTextIndex++;
             hashStr = textBox.Text;
             hashVal = textBox.Text.GetHashCode();
+
         }
 
         private void StartInput(object sender, RoutedEventArgs e)
@@ -93,14 +83,12 @@ namespace WpfApp1
             catch(Exception ex)
             {
                 pressed.IsChecked = false;
-                //logsText += ex.Message;
-                //UpdateLogs();
                 MessageBox.Show(ex.Message);
                 return;
             }
-            logsText += portChat.WritePort;
-            logsText += portChat.ReadPort;
-            UpdateLogs();
+            logTextBox.AppendText("\n");
+            logTextBox.AppendText(portChat.WritePort);
+            logTextBox.AppendText(portChat.ReadPort);
             textBox1.IsReadOnly = false;
             sent1.IsEnabled = false;
             sent2.IsEnabled = false;
@@ -112,8 +100,20 @@ namespace WpfApp1
 
         private void UpdateLogs()
         {
-            logTextBox.Text = "\n" + logsText;
-            logTextBox.Text += amountOfSentBytes;
+            var mask = portChat.StringMask;
+            for (int i =0; i < currentFrameString.Length; i++)
+            {
+                TextRange rangeOfText = new TextRange(logTextBox.Document.ContentEnd, logTextBox.Document.ContentEnd);
+                rangeOfText.Text = currentFrameString[i].ToString();
+                switch (mask[i])
+                {
+                    case '0': rangeOfText.ApplyPropertyValue(TextElement.ForegroundProperty, Brushes.Black); break;
+                    case '1': rangeOfText.ApplyPropertyValue(TextElement.ForegroundProperty, Brushes.Green); break;
+                    case '2': rangeOfText.ApplyPropertyValue(TextElement.ForegroundProperty, Brushes.Orange); break;
+                    case '3': rangeOfText.ApplyPropertyValue(TextElement.ForegroundProperty, Brushes.Red); break;
+                }
+            }
+            logTextBox.AppendText("\n");
         }
 
         private void ReadListen()
