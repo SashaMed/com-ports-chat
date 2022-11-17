@@ -101,16 +101,26 @@ namespace WpfApp1
         private void UpdateLogs()
         {
             var mask = portChat.StringMask;
-            for (int i =0; i < currentFrameString.Length; i++)
+            for (int i = 0; i < currentFrameString.Length; i++)
             {
-                TextRange rangeOfText = new TextRange(logTextBox.Document.ContentEnd, logTextBox.Document.ContentEnd);
-                rangeOfText.Text = currentFrameString[i].ToString();
-                switch (mask[i])
+                if (i < mask.Length)
                 {
-                    case '0': rangeOfText.ApplyPropertyValue(TextElement.ForegroundProperty, Brushes.Black); break;
-                    case '1': rangeOfText.ApplyPropertyValue(TextElement.ForegroundProperty, Brushes.Green); break;
-                    case '2': rangeOfText.ApplyPropertyValue(TextElement.ForegroundProperty, Brushes.Orange); break;
-                    case '3': rangeOfText.ApplyPropertyValue(TextElement.ForegroundProperty, Brushes.Red); break;
+                    TextRange rangeOfText = new TextRange(logTextBox.Document.ContentEnd, logTextBox.Document.ContentEnd);
+                    rangeOfText.Text = currentFrameString[i].ToString();
+                    switch (mask[i])
+                    {
+                        case '0': rangeOfText.ApplyPropertyValue(TextElement.ForegroundProperty, Brushes.Black); break;
+                        case '1': rangeOfText.ApplyPropertyValue(TextElement.ForegroundProperty, Brushes.Green); break;
+                        case '2': rangeOfText.ApplyPropertyValue(TextElement.ForegroundProperty, Brushes.Orange); break;
+                        case '3': rangeOfText.ApplyPropertyValue(TextElement.ForegroundProperty, Brushes.Red); break;
+                        case '4': rangeOfText.ApplyPropertyValue(TextElement.ForegroundProperty, Brushes.DarkBlue); break;
+                    }
+                }
+                else
+                {
+                    TextRange rangeOfText = new TextRange(logTextBox.Document.ContentEnd, logTextBox.Document.ContentEnd);
+                    rangeOfText.Text = currentFrameString[i].ToString();
+                    rangeOfText.ApplyPropertyValue(TextElement.ForegroundProperty, Brushes.Black);
                 }
             }
             logTextBox.AppendText("\n");

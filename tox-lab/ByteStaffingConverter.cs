@@ -34,7 +34,7 @@ namespace tox_lab
             index = msg.IndexOf(flagChar);
             ret += ((index = msg.IndexOf(flagChar)) == -1) ? EncodeToStringWithFlag(msg, msg.Length) : EncodeToStringWithFlag(msg, index);
             StringMask += '2';
-            StringMask += new string('1', FCS.ToString().Length);
+            StringMask += new string('4', FCS.ToString().Length);
             return ret + '0' + FCS.ToString();
         }
 
@@ -73,7 +73,7 @@ namespace tox_lab
             return c.ToString();
         }
 
-        public byte[] EncodeToByteArray(string msg, int sourceAddres, int destinationAddres = 0, int FCS = 0)
+        public byte[] EncodeToByteArray(string msg, int sourceAddres, int destinationAddres = 0, byte FCS = 0)
         {
             int index = 0;
             byte[] toReturn = new byte[msg.Length + 6];
@@ -93,7 +93,7 @@ namespace tox_lab
                 toReturn[index++] = (byte)msg[i];
             }
             toReturn[index++] = 0;
-            toReturn[index++] = (byte)FCS;
+            toReturn[index++] = FCS;
             return toReturn;
         }
 

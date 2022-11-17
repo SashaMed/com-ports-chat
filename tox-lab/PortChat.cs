@@ -9,6 +9,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Globalization;
 using tox_lab;
+using System.Collections;
+using System.Reflection;
 
 namespace WpfApp1
 {
@@ -160,13 +162,57 @@ namespace WpfApp1
             byte[] bytes = new byte[readWriteSize + 1];
             try
             {
-                if (readPort.Read(bytes, 0, readWriteSize) > -1)
+                if (readPort.Read(bytes, 0, readWriteSize + 1) > -1)
                 {
-                    message += byteConverter.DecodeToString(bytes);
+                    var inputFCS = bytes[bytes.Length - 1];
+                    message = byteConverter.DecodeToString(bytes);
+                    byte calculatedFCS = FCSCalculator.ComputeCRC8(message);
+                    if (inputFCS != calculatedFCS)
+                    {
+
+                        byte xored = (byte)(inputFCS ^ calculatedFCS);
+                        var mul = PolynomCalc.PolynomMul(calculatedFCS);
+                        var index = PolynomCalc.PolynomMul(xored);
+                        int byteIndex = (int)Math.Ceiling((decimal)(120 - index) / 8);
+                        return message = ErrorCorrection(inputFCS, bytes, byteIndex);
+                    }
                 }
                 return message;
             }
             catch (TimeoutException) { return String.Empty; }
+        }
+
+
+        private string ErrorCorrection(int sFCS, byte[] inBytes, int byteIndex)
+        {
+            var changeIndex = byteIndex + 3;
+            byte[] bytes = new byte[inBytes.Length];
+            Array.Copy(inBytes, 0, bytes, 0, inBytes.Length);
+            var message = byteConverter.DecodeToString(bytes);
+            byte calculatedFCS = FCSCalculator.ComputeCRC8(message);
+            if (calculatedFCS ==sFCS)
+            {
+                return message;
+            }
+            for (int i = 0; i < 8; i++)
+            {
+                var prevValue = bytes[changeIndex];
+                var p = i;
+                byte mask = (byte)(1 << p);
+                bytes[changeIndex] = (byte)((bytes[changeIndex] & ~mask) 
+                    | ((Convert.ToInt32(!((bytes[changeIndex] & (1 << p)) != 0)) << p) & mask));
+                var newMessage = byteConverter.DecodeToString(bytes);
+                calculatedFCS = FCSCalculator.ComputeCRC8(newMessage);
+                if (calculatedFCS == sFCS)
+                {
+                    return newMessage;
+                }
+                else
+                {
+                    bytes[changeIndex] = prevValue;
+                }
+            }
+            return null;
         }
 
         public string Write(char val)
@@ -174,9 +220,27 @@ namespace WpfApp1
             writeStr += val;
             if (writeStr.Length == dataSize)
             {
-                var array = byteConverter.EncodeToByteArray(writeStr, currentWritePortNum);
-                var currentFrame = byteConverter.EncodeToString(writeStr, currentReadPortNum);
-                writePort.Write(array, 0, readWriteSize);
+                var FCS = FCSCalculator.ComputeCRC8(writeStr);
+                var array = byteConverter.EncodeToByteArray(writeStr, currentWritePortNum, 0, FCS);
+                var currentFrame = byteConverter.EncodeToString(writeStr, currentReadPortNum, 0, FCS);
+                Random random = new Random();
+                if (random.Next(0, 100) % 2 == 0)
+                {
+                    var t = random.Next(5, array.Length - 2);
+                    while ((char)array[t] == '\r' && (char)array[t] == '\n' && (char)array[t] != 'p') t = random.Next(5, array.Length - 2);
+                    var p = random.Next(0, 7);
+                    byte mask = (byte)(1 << p);
+                    var tempArrayT = (byte)((array[t] & ~mask) | ((Convert.ToInt32(!((array[t] & (1 << p)) != 0)) << p) & mask));
+                    if (tempArrayT > 31)
+                    {
+                        var beforeChanges = Convert.ToString(array[t], 2);
+                        currentFrame += $", {(char)array[t]}({array[t].ToString()}) to {(char)tempArrayT}({tempArrayT.ToString()})";
+                        array[t] = tempArrayT;
+                        var changedMessage = byteConverter.DecodeToString(array);
+                        currentFrame = byteConverter.EncodeToString(changedMessage, currentReadPortNum, 0, FCS);
+                    }
+                }
+                writePort.Write(array, 0, readWriteSize + 1);
                 writeStr = "";
                 return currentFrame;
             }
