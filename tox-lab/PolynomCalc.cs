@@ -63,16 +63,6 @@ namespace tox_lab
                 bits = MakeLenEqualLen(bits, len);
             }
 
-            //for (int i = len - 1; i >= 0; i--)
-            //{
-            //    if (bits[i] == '0')
-            //    {
-            //        bits = (string)bits.Remove(bits.Length - 1, 1);
-            //        countOf0++;
-            //    }
-            //    else break;
-            //}
-
             return countOf0;
         }
 

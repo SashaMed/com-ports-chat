@@ -35,7 +35,12 @@ namespace tox_lab
             ret += ((index = msg.IndexOf(flagChar)) == -1) ? EncodeToStringWithFlag(msg, msg.Length) : EncodeToStringWithFlag(msg, index);
             StringMask += '2';
             StringMask += new string('4', FCS.ToString().Length);
-            return ret + '0' + FCS.ToString();
+            if (FCS < 16)
+            {
+                StringMask += new string('4', 1);
+                return ret + "00" + Convert.ToString(FCS, 16);
+            }
+            return ret + '0'   + Convert.ToString(FCS,16);
         }
 
         private string EncodeToStringWithFlag(string msg, int index)

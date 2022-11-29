@@ -165,6 +165,7 @@ namespace WpfApp1
                 if (readPort.Read(bytes, 0, readWriteSize + 1) > -1)
                 {
                     var inputFCS = bytes[bytes.Length - 1];
+
                     message = byteConverter.DecodeToString(bytes);
                     byte calculatedFCS = FCSCalculator.ComputeCRC8(message);
                     if (inputFCS != calculatedFCS)
