@@ -37,7 +37,9 @@ namespace WpfApp1
         int swapFlag = 0;
         int readWriteSize = 20;
         int dataSize = 15;
-        string writeStr = "";
+        int maxCountOfAttempts = 10;
+		string writeStr = "";
+        string currentFrame = "";
         ByteStaffingConverter byteConverter;
 
         public PortChat()
@@ -118,7 +120,7 @@ namespace WpfApp1
             port.Parity = port.Parity;
             port.StopBits = port.StopBits;
             port.Handshake = port.Handshake;
-            port.ReadTimeout = 500;
+            port.ReadTimeout = 250;
             port.WriteTimeout = 500;
         }
 
@@ -160,9 +162,23 @@ namespace WpfApp1
         {
             string message = "";
             byte[] bytes = new byte[readWriteSize + 1];
-            try
+			byte[] jamBytes = new byte[readWriteSize + 1];
+			try
             {
                 if (readPort.Read(bytes, 0, readWriteSize + 1) > -1)
+                {
+                    var t = readPort.Read(jamBytes, 0, readWriteSize + 1) > -1;
+                    if (t)
+                    {
+                        if (CheckForJamSignal(jamBytes)) return message;
+                    }
+
+				}
+				return String.Empty;
+			}
+            catch (TimeoutException) 
+            {
+                if (string.IsNullOrEmpty(message))
                 {
                     var inputFCS = bytes[bytes.Length - 1];
 
@@ -177,12 +193,21 @@ namespace WpfApp1
                         int byteIndex = (int)Math.Ceiling((decimal)(120 - index) / 8);
                         return message = ErrorCorrection(inputFCS, bytes, byteIndex);
                     }
+
+                    return message;
                 }
-                return message;
+			    else return String.Empty; 
             }
-            catch (TimeoutException) { return String.Empty; }
         }
 
+        private bool CheckForJamSignal(byte[] bytes)
+        {
+            foreach (var b in bytes)
+            {
+                if (b != 48) return false;
+            }
+            return true;
+        }
 
         private string ErrorCorrection(int sFCS, byte[] inBytes, int byteIndex)
         {
@@ -191,7 +216,7 @@ namespace WpfApp1
             Array.Copy(inBytes, 0, bytes, 0, inBytes.Length);
             var message = byteConverter.DecodeToString(bytes);
             byte calculatedFCS = FCSCalculator.ComputeCRC8(message);
-            if (calculatedFCS ==sFCS)
+            if (calculatedFCS == sFCS)
             {
                 return message;
             }
@@ -216,37 +241,90 @@ namespace WpfApp1
             return null;
         }
 
+        private string CSMA()
+        {
+			string frame = "";
+			Random random = new Random();
+			int countOfAttempts = 0;
+			string isСollision = "";
+			while (countOfAttempts < maxCountOfAttempts)
+			{
+				var isBusy = random.Next(10) % 2 == 0;
+				if (isBusy)
+				{
+					continue;
+				}
+				frame = WriteManipulations();
+				var isСollisionDetected = random.Next(10) % 2 == 0;
+				if (isСollisionDetected)
+				{
+					isСollision += "*";
+					WriteJam();
+					countOfAttempts++;
+					var delay = random.Next(0, (int)Math.Pow(2, countOfAttempts));
+					Thread.Sleep(delay);
+				}
+				else
+				{
+					writeStr = "";
+					return frame + ":" + isСollision;
+				}
+			}
+			writeStr = "";
+			return frame + ":" + isСollision;
+		}
+
         public string Write(char val)
         {
             writeStr += val;
             if (writeStr.Length == dataSize)
             {
-                var FCS = FCSCalculator.ComputeCRC8(writeStr);
-                var array = byteConverter.EncodeToByteArray(writeStr, currentWritePortNum, 0, FCS);
-                var currentFrame = byteConverter.EncodeToString(writeStr, currentReadPortNum, 0, FCS);
-                Random random = new Random();
-                if (random.Next(0, 100) % 2 == 0)
-                {
-                    var t = random.Next(5, array.Length - 2);
-                    while ((char)array[t] == '\r' && (char)array[t] == '\n' && (char)array[t] != 'p') t = random.Next(5, array.Length - 2);
-                    var p = random.Next(0, 7);
-                    byte mask = (byte)(1 << p);
-                    var tempArrayT = (byte)((array[t] & ~mask) | ((Convert.ToInt32(!((array[t] & (1 << p)) != 0)) << p) & mask));
-                    if (tempArrayT > 31)
-                    {
-                        var beforeChanges = Convert.ToString(array[t], 2);
-                        currentFrame += $", {(char)array[t]}({array[t].ToString()}) to {(char)tempArrayT}({tempArrayT.ToString()})";
-                        array[t] = tempArrayT;
-                        var changedMessage = byteConverter.DecodeToString(array);
-                        currentFrame = byteConverter.EncodeToString(changedMessage, currentReadPortNum, 0, FCS);
-                    }
-                }
-                writePort.Write(array, 0, readWriteSize + 1);
-                writeStr = "";
-                return currentFrame;
-            }
+                return CSMA();
+			}
             return String.Empty;
         }
+
+        private void WriteJam()
+        {
+            var array = MakeJamSignal();
+			writePort.Write(array, 0, readWriteSize + 1);
+		}
+
+        private byte[] MakeJamSignal()
+        {
+			var array = new byte[readWriteSize + 1];
+            for (var a = 0; a < array.Length; a++)
+            {
+                array[a] = 48;
+            }
+            return array;
+		} 
+
+        private string WriteManipulations()
+        {
+			var FCS = FCSCalculator.ComputeCRC8(writeStr);
+			var array = byteConverter.EncodeToByteArray(writeStr, currentWritePortNum, 0, FCS);
+			currentFrame = byteConverter.EncodeToString(writeStr, currentReadPortNum, 0, FCS);
+			Random random = new Random();
+			if (random.Next(0, 100) % 2 == 0)
+			{
+				var t = random.Next(5, array.Length - 2);
+				while ((char)array[t] == '\r' && (char)array[t] == '\n' && (char)array[t] != 'p') t = random.Next(5, array.Length - 2);
+				var p = random.Next(0, 7);
+				byte mask = (byte)(1 << p);
+				var tempArrayT = (byte)((array[t] & ~mask) | ((Convert.ToInt32(!((array[t] & (1 << p)) != 0)) << p) & mask));
+				if (tempArrayT > 31)
+				{
+					var beforeChanges = Convert.ToString(array[t], 2);
+					currentFrame += $", {(char)array[t]}({array[t].ToString()}) to {(char)tempArrayT}({tempArrayT.ToString()})";
+					array[t] = tempArrayT;
+					var changedMessage = byteConverter.DecodeToString(array);
+					currentFrame = byteConverter.EncodeToString(changedMessage, currentReadPortNum, 0, FCS);
+				}
+			}
+			writePort.Write(array, 0, readWriteSize + 1);
+			return currentFrame;
+		}
 
         public string[] GetPortName()
         {
